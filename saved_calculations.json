@@ -1,0 +1,14 @@
+{
+    "666777": {
+        "niche": "Техника и электроника (Мск)",
+        "wordstat_demand": 11500,
+        "current_rating": 3.61,
+        "ctr_before": 1.23,
+        "ctr_after": 7.97,
+        "conv_map": 12.03,
+        "conv_call": 9.97,
+        "conv_site": 18.0,
+        "conv_sale": 20.0,
+        "avg_check": 27000
+    }
+}

@@ -5,14 +5,14 @@
             "ctr_after": 0.12,
             "conv_map": 0.12,
             "conv_call": 0.22,
-            "conv_site": 0.12,
+            "conv_site": 0.12050000000000001,
             "avg_check": 15000,
             "conv_sale": 0.28
         },
         "Автосервис (Мск)": {
             "ctr_before": 0.02,
             "ctr_after": 0.14,
-            "conv_map": 0.20,
+            "conv_map": 0.2,
             "conv_call": 0.18,
             "conv_site": 0.05,
             "avg_check": 12000,
@@ -30,11 +30,11 @@
         "Ресторан/Кафе (Мск)": {
             "ctr_before": 0.03,
             "ctr_after": 0.18,
-            "conv_map": 0.30,
+            "conv_map": 0.3,
             "conv_call": 0.05,
             "conv_site": 0.04,
             "avg_check": 3000,
-            "conv_sale": 0.50
+            "conv_sale": 0.5
         },
         "Салон красоты (Мск)": {
             "ctr_before": 0.02,
@@ -61,11 +61,11 @@
             "conv_call": 0.15,
             "conv_site": 0.2,
             "avg_check": 4000,
-            "conv_sale": 0.40
+            "conv_sale": 0.4
         },
         "Медцентр (Мск)": {
             "ctr_before": 0.01,
-            "ctr_after": 0.10,
+            "ctr_after": 0.1,
             "conv_map": 0.08,
             "conv_call": 0.2,
             "conv_site": 0.15,
@@ -79,7 +79,7 @@
             "conv_call": 0.1,
             "conv_site": 0.18,
             "avg_check": 25000,
-            "conv_sale": 0.20
+            "conv_sale": 0.2
         },
         "Продукты/Магазины (Мск)": {
             "ctr_before": 0.04,
