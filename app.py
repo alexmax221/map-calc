@@ -75,6 +75,7 @@ if 'initialized' not in st.session_state:
     st.session_state.niche_selector = first_niche
     st.session_state.wordstat_demand = 10000
     st.session_state.current_rating = 4.0
+    st.session_state.competitor_count = 5
     st.session_state.ctr_before_in = n_data['ctr_before'] * 100
     st.session_state.ctr_after_in = n_data['ctr_after'] * 100
     st.session_state.conv_map_in = n_data['conv_map'] * 100
@@ -117,6 +118,7 @@ with tab1:
         if data:
             st.session_state.wordstat_demand = data['wordstat_demand']
             st.session_state.current_rating = data['current_rating']
+            st.session_state.competitor_count = data.get('competitor_count', 5)
             st.session_state.ctr_before_in = data['ctr_before']
             st.session_state.ctr_after_in = data['ctr_after']
             st.session_state.conv_map_in = data['conv_map']
@@ -146,6 +148,19 @@ with tab1:
     st.sidebar.number_input("Спрос в локации (чел/мес):", min_value=0, step=500, key="wordstat_demand")
     st.sidebar.slider("Текущий рейтинг в Картах:", 1.0, 5.0, 0.1, key="current_rating")
     
+    st.sidebar.number_input("Конкурентов в радиусе 1 км:", min_value=0, step=1, key="competitor_count")
+    
+    # Расчет коэффициента для вывода в sidebar
+    cc_sidebar = config.get("competition_coeffs", {"2": 1.1, "6": 1.0, "15": 0.85, "35": 0.7, "60": 0.55, "default": 0.4})
+    c_count_sb = st.session_state.competitor_count
+    current_k = cc_sidebar.get("2") if c_count_sb <= 2 else (cc_sidebar.get("6") if c_count_sb <= 6 else (cc_sidebar.get("15") if c_count_sb <= 15 else (cc_sidebar.get("35") if c_count_sb <= 35 else (cc_sidebar.get("60") if c_count_sb <= 60 else cc_sidebar.get("default")))))
+    
+    st.sidebar.caption(f"📊 Множитель влияния: **x{current_k}**")
+    if current_k < 1.0:
+        st.sidebar.warning(f"Высокая конкуренция снижает продажи на {int((1-current_k)*100)}%")
+    elif current_k > 1.0:
+        st.sidebar.success(f"Низкая конкуренция дает бонус +{int((current_k-1)*100)}%")
+
     st.sidebar.divider()
     st.sidebar.subheader("Настройка коэффициентов")
     
@@ -179,6 +194,7 @@ with tab1:
                 "niche": st.session_state.niche_selector,
                 "wordstat_demand": st.session_state.wordstat_demand,
                 "current_rating": st.session_state.current_rating,
+                "competitor_count": st.session_state.competitor_count,
                 "ctr_before": st.session_state.ctr_before_in,
                 "ctr_after": st.session_state.ctr_after_in,
                 "conv_map": st.session_state.conv_map_in,
@@ -197,18 +213,24 @@ with tab1:
     r_coeff_before = rc.get("4.8") if st.session_state.current_rating >= 4.8 else (rc.get("4.3") if st.session_state.current_rating >= 4.3 else (rc.get("3.8") if st.session_state.current_rating >= 3.8 else rc.get("default")))
     r_coeff_after = rc.get("4.8")
 
-    def calculate_metrics(ctr, r_coeff, conv_m, conv_c, conv_s, conv_sl, avg_c):
+    # Коэффициент конкуренции из конфига
+    cc = config.get("competition_coeffs", {"2": 1.1, "6": 1.0, "15": 0.85, "35": 0.7, "60": 0.55, "default": 0.4})
+    c_count = st.session_state.competitor_count
+    comp_coeff = cc.get("2") if c_count <= 2 else (cc.get("6") if c_count <= 6 else (cc.get("15") if c_count <= 15 else (cc.get("35") if c_count <= 35 else (cc.get("60") if c_count <= 60 else cc.get("default")))))
+
+    def calculate_metrics(ctr, r_coeff, conv_m, conv_c, conv_s, conv_sl, avg_c, c_coeff):
         views = int(st.session_state.wordstat_demand * (ctr / 100))
         maps = int(views * (conv_m / 100) * r_coeff)
         calls = int(views * (conv_c / 100) * r_coeff)
         site = int(views * (conv_s / 100) * r_coeff)
         total_leads = maps + calls + site
-        sales = int(total_leads * (conv_sl / 100))
+        # Конкуренция влияет на финальную конверсию в продажу
+        sales = int(total_leads * (conv_sl / 100) * c_coeff)
         revenue = int(sales * avg_c)
         return [views, maps, calls, site, total_leads, revenue, sales]
 
-    before = calculate_metrics(st.session_state.ctr_before_in, r_coeff_before, st.session_state.conv_map_in, st.session_state.conv_call_in, st.session_state.conv_site_in, st.session_state.conv_sale_in, st.session_state.avg_check_in)
-    after = calculate_metrics(st.session_state.ctr_after_in, r_coeff_after, st.session_state.conv_map_in, st.session_state.conv_call_in, st.session_state.conv_site_in, st.session_state.conv_sale_in, st.session_state.avg_check_in)
+    before = calculate_metrics(st.session_state.ctr_before_in, r_coeff_before, st.session_state.conv_map_in, st.session_state.conv_call_in, st.session_state.conv_site_in, st.session_state.conv_sale_in, st.session_state.avg_check_in, comp_coeff)
+    after = calculate_metrics(st.session_state.ctr_after_in, r_coeff_after, st.session_state.conv_map_in, st.session_state.conv_call_in, st.session_state.conv_site_in, st.session_state.conv_sale_in, st.session_state.avg_check_in, comp_coeff)
 
     metrics_labels = ['Просмотры', 'Маршруты', 'Звонки', 'Сайт']
     fig = go.Figure(data=[go.Bar(name='Текущее состояние', x=metrics_labels, y=before[:4], marker_color='#E0E0E0'), go.Bar(name='После продвижения (ТОП-3)', x=metrics_labels, y=after[:4], marker_color='#FFD700')])
@@ -219,14 +241,16 @@ with tab1:
         st.plotly_chart(fig, use_container_width=True)
         st.subheader("📋 Используемые показатели")
         st.table(pd.DataFrame({
-            "Параметр": ["CTR до / после", "Конв. в Маршрут", "Конв. в Звонок", "Конв. на Сайт", "Конв. в продажу", "Средний чек"],
+            "Параметр": ["Конкуренция (1км)", "CTR до / после", "Конв. в Маршрут", "Конв. в Звонок", "Конв. на Сайт", "Конв. в продажу", "Средний чек"],
             "Значение": [
+                f"{st.session_state.competitor_count} объект. (x{comp_coeff})",
                 f"{st.session_state.ctr_before_in:.2f}% / {st.session_state.ctr_after_in:.2f}%",
                 f"{st.session_state.conv_map_in:.2f}%", f"{st.session_state.conv_call_in:.2f}%",
                 f"{st.session_state.conv_site_in:.2f}%", f"{st.session_state.conv_sale_in:.1f}%",
                 f"{st.session_state.avg_check_in:,} руб."
             ],
             "Описание": [
+                "Плотность конкуренции снижает долю рынка одного игрока.",
                 "Эффективность карточки в поиске (клики/показы).",
                 "Процент построивших маршрут от открывших карточку.",
                 "Процент нажавших на кнопку звонка.",
@@ -259,8 +283,9 @@ with tab1:
 АНАЛИЗ ЛОКАЦИИ И ЭКОНОМИЧЕСКИЙ ПРОГНОЗ
 Ниша: {st.session_state.niche_selector} (Москва)
 ---
-1. ОЦЕНКА СПРОСА
+1. ОЦЕНКА СПРОСА И КОНКУРЕНЦИИ
 Общий объем горячего спроса в локации (Wordstat): {st.session_state.wordstat_demand:,} чел/мес.
+Плотность конкуренции: {st.session_state.competitor_count} объектов в радиусе 1 км.
 2. ПРОГНОЗ ПОКАЗАТЕЛЕЙ (Цель: ТОП-3 + Рейтинг 4.8+)
 • Охват (просмотры карточки): {after[0]:,} (рост с {before[0]:,})
 • Целевые обращения (звонки/маршруты/сайт): {after[4]:,} шт/мес.
