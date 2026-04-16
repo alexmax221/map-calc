@@ -2,55 +2,55 @@
     "niches": {
         "Стоматология (Мск)": {
             "ctr_before": 0.015,
-            "ctr_after": 0.1,
-            "conv_map": 0.08,
-            "conv_call": 0.15,
-            "conv_site": 0.1,
-            "avg_check": 12500,
-            "conv_sale": 0.3
+            "ctr_after": 0.12,
+            "conv_map": 0.12,
+            "conv_call": 0.22,
+            "conv_site": 0.12050000000000001,
+            "avg_check": 15000,
+            "conv_sale": 0.28
         },
         "Автосервис (Мск)": {
             "ctr_before": 0.02,
-            "ctr_after": 0.12,
-            "conv_map": 0.12,
+            "ctr_after": 0.14,
+            "conv_map": 0.2,
             "conv_call": 0.18,
             "conv_site": 0.05,
-            "avg_check": 11500,
+            "avg_check": 12000,
             "conv_sale": 0.45
         },
         "Отель (Мск)": {
             "ctr_before": 0.01,
-            "ctr_after": 0.08,
-            "conv_map": 0.07,
+            "ctr_after": 0.09,
+            "conv_map": 0.1,
             "conv_call": 0.05,
-            "conv_site": 0.2,
-            "avg_check": 12000,
-            "conv_sale": 0.2
+            "conv_site": 0.25,
+            "avg_check": 10000,
+            "conv_sale": 0.18
         },
         "Ресторан/Кафе (Мск)": {
             "ctr_before": 0.03,
-            "ctr_after": 0.15,
-            "conv_map": 0.18,
+            "ctr_after": 0.18,
+            "conv_map": 0.3,
             "conv_call": 0.05,
-            "conv_site": 0.05,
-            "avg_check": 2500,
+            "conv_site": 0.04,
+            "avg_check": 3000,
             "conv_sale": 0.5
         },
         "Салон красоты (Мск)": {
             "ctr_before": 0.02,
-            "ctr_after": 0.12,
+            "ctr_after": 0.13,
             "conv_map": 0.15,
-            "conv_call": 0.15,
+            "conv_call": 0.18,
             "conv_site": 0.08,
-            "avg_check": 4000,
-            "conv_sale": 0.4
+            "avg_check": 5000,
+            "conv_sale": 0.35
         },
         "Фитнес-клуб (Мск)": {
             "ctr_before": 0.015,
-            "ctr_after": 0.08,
-            "conv_map": 0.05,
-            "conv_call": 0.1,
-            "conv_site": 0.12,
+            "ctr_after": 0.09,
+            "conv_map": 0.1,
+            "conv_call": 0.12,
+            "conv_site": 0.15,
             "avg_check": 45000,
             "conv_sale": 0.25
         },
@@ -60,31 +60,31 @@
             "conv_map": 0.15,
             "conv_call": 0.15,
             "conv_site": 0.2,
-            "avg_check": 4500,
-            "conv_sale": 0.45
+            "avg_check": 4000,
+            "conv_sale": 0.4
         },
         "Медцентр (Мск)": {
             "ctr_before": 0.01,
-            "ctr_after": 0.09,
+            "ctr_after": 0.1,
             "conv_map": 0.08,
-            "conv_call": 0.18,
-            "conv_site": 0.12,
-            "avg_check": 5000,
-            "conv_sale": 0.3
+            "conv_call": 0.2,
+            "conv_site": 0.15,
+            "avg_check": 6000,
+            "conv_sale": 0.28
         },
         "Техника и электроника (Мск)": {
             "ctr_before": 0.012,
-            "ctr_after": 0.07,
-            "conv_map": 0.1,
+            "ctr_after": 0.08,
+            "conv_map": 0.12,
             "conv_call": 0.1,
-            "conv_site": 0.15,
+            "conv_site": 0.18,
             "avg_check": 25000,
             "conv_sale": 0.2
         },
         "Продукты/Магазины (Мск)": {
             "ctr_before": 0.04,
-            "ctr_after": 0.2,
-            "conv_map": 0.35,
+            "ctr_after": 0.22,
+            "conv_map": 0.4,
             "conv_call": 0.02,
             "conv_site": 0.03,
             "avg_check": 2000,
@@ -92,28 +92,28 @@
         },
         "Косметика (Мск)": {
             "ctr_before": 0.018,
-            "ctr_after": 0.1,
-            "conv_map": 0.12,
+            "ctr_after": 0.11,
+            "conv_map": 0.15,
             "conv_call": 0.06,
-            "conv_site": 0.12,
-            "avg_check": 4585,
-            "conv_sale": 0.3
+            "conv_site": 0.14,
+            "avg_check": 4500,
+            "conv_sale": 0.25
         },
         "Бьюти-студии/Услуги (Мск)": {
             "ctr_before": 0.02,
-            "ctr_after": 0.12,
-            "conv_map": 0.12,
-            "conv_call": 0.18,
+            "ctr_after": 0.13,
+            "conv_map": 0.14,
+            "conv_call": 0.2,
             "conv_site": 0.1,
-            "avg_check": 3500,
-            "conv_sale": 0.4
+            "avg_check": 4000,
+            "conv_sale": 0.35
         }
     },
     "rating_coeffs": {
-        "4.8": 1.5,
+        "4.8": 1.3,
         "4.3": 1.0,
-        "3.8": 0.6,
-        "default": 0.3
+        "3.8": 0.7,
+        "default": 0.4
     },
     "competition_coeffs": {
         "2": 1.1,
