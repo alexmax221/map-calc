@@ -185,7 +185,7 @@ with tab1:
     )
     
     st.sidebar.number_input("Спрос в локации (чел/мес):", min_value=0, step=500, key="wordstat_demand")
-    st.sidebar.slider("Текущий рейтинг в Картах:", 1.0, 5.0, 0.1, key="current_rating")
+    st.sidebar.number_input("Текущий рейтинг в Картах:", min_value=1.0, max_value=5.0, step=0.1, format="%.1f", key="current_rating")
     
     st.sidebar.number_input("Конкурентов в радиусе 1 км:", min_value=0, step=1, key="competitor_count")
     
