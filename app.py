@@ -36,6 +36,38 @@ def save_config(config):
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=4, ensure_ascii=False)
 
+def get_rating_coeff(rating, rating_coeffs):
+    if rating >= 4.8:
+        return rating_coeffs.get("4.8")
+    if rating >= 4.3:
+        return rating_coeffs.get("4.3")
+    if rating >= 3.8:
+        return rating_coeffs.get("3.8")
+    return rating_coeffs.get("default")
+
+def get_competition_coeff(competitor_count, competition_coeffs):
+    if competitor_count <= 2:
+        return competition_coeffs.get("2")
+    if competitor_count <= 6:
+        return competition_coeffs.get("6")
+    if competitor_count <= 15:
+        return competition_coeffs.get("15")
+    if competitor_count <= 35:
+        return competition_coeffs.get("35")
+    if competitor_count <= 60:
+        return competition_coeffs.get("60")
+    return competition_coeffs.get("default")
+
+def calculate_metrics(demand, ctr, rating_coeff, conv_map, conv_call, conv_site, conv_sale, avg_check, competition_coeff):
+    views = int(demand * (ctr / 100))
+    maps = int(views * (conv_map / 100) * rating_coeff)
+    calls = int(views * (conv_call / 100) * rating_coeff)
+    site = int(views * (conv_site / 100) * rating_coeff)
+    total_leads = maps + calls + site
+    sales = int(total_leads * (conv_sale / 100) * competition_coeff)
+    revenue = int(sales * avg_check)
+    return [views, maps, calls, site, total_leads, revenue, sales]
+
 def load_saved_calculations():
     if not os.path.exists(SAVED_CALCS_FILE):
         return {}
@@ -84,9 +116,16 @@ if 'initialized' not in st.session_state:
     st.session_state.conv_sale_in = n_data.get('conv_sale', 0.3) * 100
     st.session_state.avg_check_in = n_data['avg_check']
 
+if 'chain_points' not in st.session_state:
+    st.session_state.chain_points = [
+        {"Адрес": "", "Спрос": 10000, "Конкуренты": 5, "Рейтинг": 4.0},
+        {"Адрес": "", "Спрос": 10000, "Конкуренты": 5, "Рейтинг": 4.0},
+        {"Адрес": "", "Спрос": 10000, "Конкуренты": 5, "Рейтинг": 4.0},
+    ]
+
 # --- ИНТЕРФЕЙС ---
 
-tab1, tab2, tab3 = st.tabs(["📊 Калькулятор прогноза", "⚙️ Настройки бенчмарков", "📂 Сохраненные расчеты"])
+tab1, tab2, tab3, tab4 = st.tabs(["📊 Калькулятор прогноза", "🏪 Сетка точек", "⚙️ Настройки бенчмарков", "📂 Сохраненные расчеты"])
 
 with tab1:
     st.title("🚀 Калькулятор роста трафика на Яндекс Картах")
@@ -210,27 +249,16 @@ with tab1:
 
     # --- ЛОГИКА РАСЧЕТА ---
     rc = config["rating_coeffs"]
-    r_coeff_before = rc.get("4.8") if st.session_state.current_rating >= 4.8 else (rc.get("4.3") if st.session_state.current_rating >= 4.3 else (rc.get("3.8") if st.session_state.current_rating >= 3.8 else rc.get("default")))
+    r_coeff_before = get_rating_coeff(st.session_state.current_rating, rc)
     r_coeff_after = rc.get("4.8")
 
     # Коэффициент конкуренции из конфига
     cc = config.get("competition_coeffs", {"2": 1.1, "6": 1.0, "15": 0.85, "35": 0.7, "60": 0.55, "default": 0.4})
     c_count = st.session_state.competitor_count
-    comp_coeff = cc.get("2") if c_count <= 2 else (cc.get("6") if c_count <= 6 else (cc.get("15") if c_count <= 15 else (cc.get("35") if c_count <= 35 else (cc.get("60") if c_count <= 60 else cc.get("default")))))
+    comp_coeff = get_competition_coeff(c_count, cc)
 
-    def calculate_metrics(ctr, r_coeff, conv_m, conv_c, conv_s, conv_sl, avg_c, c_coeff):
-        views = int(st.session_state.wordstat_demand * (ctr / 100))
-        maps = int(views * (conv_m / 100) * r_coeff)
-        calls = int(views * (conv_c / 100) * r_coeff)
-        site = int(views * (conv_s / 100) * r_coeff)
-        total_leads = maps + calls + site
-        # Конкуренция влияет на финальную конверсию в продажу
-        sales = int(total_leads * (conv_sl / 100) * c_coeff)
-        revenue = int(sales * avg_c)
-        return [views, maps, calls, site, total_leads, revenue, sales]
-
-    before = calculate_metrics(st.session_state.ctr_before_in, r_coeff_before, st.session_state.conv_map_in, st.session_state.conv_call_in, st.session_state.conv_site_in, st.session_state.conv_sale_in, st.session_state.avg_check_in, comp_coeff)
-    after = calculate_metrics(st.session_state.ctr_after_in, r_coeff_after, st.session_state.conv_map_in, st.session_state.conv_call_in, st.session_state.conv_site_in, st.session_state.conv_sale_in, st.session_state.avg_check_in, comp_coeff)
+    before = calculate_metrics(st.session_state.wordstat_demand, st.session_state.ctr_before_in, r_coeff_before, st.session_state.conv_map_in, st.session_state.conv_call_in, st.session_state.conv_site_in, st.session_state.conv_sale_in, st.session_state.avg_check_in, comp_coeff)
+    after = calculate_metrics(st.session_state.wordstat_demand, st.session_state.ctr_after_in, r_coeff_after, st.session_state.conv_map_in, st.session_state.conv_call_in, st.session_state.conv_site_in, st.session_state.conv_sale_in, st.session_state.avg_check_in, comp_coeff)
 
     metrics_labels = ['Просмотры', 'Маршруты', 'Звонки', 'Сайт']
     fig = go.Figure(data=[go.Bar(name='Текущее состояние', x=metrics_labels, y=before[:4], marker_color='#E0E0E0'), go.Bar(name='После продвижения (ТОП-3)', x=metrics_labels, y=after[:4], marker_color='#FFD700')])
@@ -300,8 +328,197 @@ with tab1:
 *Данные основаны на индивидуально настроенных коэффициентах и емкости рынка в указанной локации.
 """, height=350)
 
-# --- ВКЛАДКА НАСТРОЕК ---
+# --- ВКЛАДКА СЕТКИ ТОЧЕК ---
 with tab2:
+    st.title("🏪 Расчет прироста трафика для сетки точек")
+    st.write("Выберите нишу и заполните данные по каждой точке. Для всей сетки автоматически применяются бенчмарки выбранной отрасли.")
+
+    chain_niche = st.selectbox(
+        "Ниша для всей сетки:",
+        list(config["niches"].keys()),
+        key="chain_niche_selector"
+    )
+    chain_preset = config["niches"][chain_niche]
+
+    st.caption(
+        f"Пресет ниши: CTR {chain_preset['ctr_before']*100:.1f}% → {chain_preset['ctr_after']*100:.1f}%, "
+        f"маршрут {chain_preset['conv_map']*100:.1f}%, звонок {chain_preset['conv_call']*100:.1f}%, "
+        f"сайт {chain_preset['conv_site']*100:.1f}%, продажа {chain_preset['conv_sale']*100:.1f}%, "
+        f"средний чек {chain_preset['avg_check']:,} ₽."
+    )
+
+    toolbar_col1, toolbar_col2 = st.columns([1, 5])
+    with toolbar_col1:
+        if st.button("➕ Добавить точку", key="add_chain_point"):
+            st.session_state.chain_points.append({"Адрес": "", "Спрос": 10000, "Конкуренты": 5, "Рейтинг": 4.0})
+            st.rerun()
+    with toolbar_col2:
+        st.caption("Изменения в полях сохраняются при переходе к следующему полю. Для рейтинга доступны дробные значения, например `4.4`.")
+
+    st.subheader("📍 Параметры точек")
+    header_cols = st.columns([3, 1.2, 1.2, 1.2, 0.8])
+    header_cols[0].markdown("**Адрес**")
+    header_cols[1].markdown("**Спрос**")
+    header_cols[2].markdown("**Конкуренты**")
+    header_cols[3].markdown("**Рейтинг**")
+    header_cols[4].markdown("**Действие**")
+
+    updated_chain_points = []
+    remove_index = None
+    if not st.session_state.chain_points:
+        st.session_state.chain_points = [{"Адрес": "", "Спрос": 10000, "Конкуренты": 5, "Рейтинг": 4.0}]
+
+    for idx, point in enumerate(st.session_state.chain_points):
+        row_cols = st.columns([3, 1.2, 1.2, 1.2, 0.8])
+        with row_cols[0]:
+            address = st.text_input(
+                f"Адрес {idx + 1}",
+                value=point.get("Адрес", ""),
+                key=f"chain_address_{idx}",
+                label_visibility="collapsed",
+                placeholder="Например, ул. Ленина, 10"
+            )
+        with row_cols[1]:
+            demand = st.number_input(
+                f"Спрос {idx + 1}",
+                min_value=0,
+                step=500,
+                value=int(point.get("Спрос", 10000)),
+                key=f"chain_demand_{idx}",
+                label_visibility="collapsed"
+            )
+        with row_cols[2]:
+            competitors = st.number_input(
+                f"Конкуренты {idx + 1}",
+                min_value=0,
+                step=1,
+                value=int(point.get("Конкуренты", 5)),
+                key=f"chain_competitors_{idx}",
+                label_visibility="collapsed"
+            )
+        with row_cols[3]:
+            rating = st.number_input(
+                f"Рейтинг {idx + 1}",
+                min_value=1.0,
+                max_value=5.0,
+                step=0.1,
+                value=float(point.get("Рейтинг", 4.0)),
+                format="%.1f",
+                key=f"chain_rating_{idx}",
+                label_visibility="collapsed"
+            )
+        with row_cols[4]:
+            if st.button("✕", key=f"remove_chain_point_{idx}", help="Удалить точку"):
+                remove_index = idx
+
+        updated_chain_points.append({
+            "Адрес": address,
+            "Спрос": int(demand),
+            "Конкуренты": int(competitors),
+            "Рейтинг": float(rating),
+        })
+
+    st.session_state.chain_points = updated_chain_points
+    if remove_index is not None:
+        st.session_state.chain_points.pop(remove_index)
+        st.rerun()
+
+    cc = config.get("competition_coeffs", {"2": 1.1, "6": 1.0, "15": 0.85, "35": 0.7, "60": 0.55, "default": 0.4})
+    rc = config["rating_coeffs"]
+    chain_results = []
+
+    for row in st.session_state.chain_points:
+        address = str(row.get("Адрес", "")).strip()
+        demand = int(row.get("Спрос", 0) or 0)
+        competitors = int(row.get("Конкуренты", 0) or 0)
+        rating = float(row.get("Рейтинг", 0) or 0)
+
+        if not address or demand <= 0:
+            continue
+
+        rating_before = get_rating_coeff(rating, rc)
+        rating_after = rc.get("4.8")
+        competition_coeff = get_competition_coeff(competitors, cc)
+
+        before_point = calculate_metrics(
+            demand,
+            chain_preset["ctr_before"] * 100,
+            rating_before,
+            chain_preset["conv_map"] * 100,
+            chain_preset["conv_call"] * 100,
+            chain_preset["conv_site"] * 100,
+            chain_preset["conv_sale"] * 100,
+            chain_preset["avg_check"],
+            competition_coeff
+        )
+        after_point = calculate_metrics(
+            demand,
+            chain_preset["ctr_after"] * 100,
+            rating_after,
+            chain_preset["conv_map"] * 100,
+            chain_preset["conv_call"] * 100,
+            chain_preset["conv_site"] * 100,
+            chain_preset["conv_sale"] * 100,
+            chain_preset["avg_check"],
+            competition_coeff
+        )
+
+        chain_results.append({
+            "Адрес": address or "Без названия",
+            "Спрос": demand,
+            "Конкуренты": competitors,
+            "Рейтинг": round(rating, 1),
+            "Просмотры сейчас": before_point[0],
+            "Просмотры после": after_point[0],
+            "Прирост просмотров": after_point[0] - before_point[0],
+            "Обращения сейчас": before_point[4],
+            "Обращения после": after_point[4],
+            "Прирост обращений": after_point[4] - before_point[4],
+            "Продажи сейчас": before_point[6],
+            "Продажи после": after_point[6],
+            "Прирост продаж": after_point[6] - before_point[6],
+            "Выручка сейчас, ₽": before_point[5],
+            "Выручка после, ₽": after_point[5],
+            "Прирост выручки, ₽": after_point[5] - before_point[5],
+        })
+
+    if chain_results:
+        chain_results_df = pd.DataFrame(chain_results)
+        total_views_gain = int(chain_results_df["Прирост просмотров"].sum())
+        total_leads_gain = int(chain_results_df["Прирост обращений"].sum())
+        total_revenue_gain = int(chain_results_df["Прирост выручки, ₽"].sum())
+        top_point = chain_results_df.sort_values("Прирост выручки, ₽", ascending=False).iloc[0]
+
+        metric_col1, metric_col2, metric_col3 = st.columns(3)
+        with metric_col1:
+            st.metric("Суммарный прирост просмотров", f"{total_views_gain:,}")
+        with metric_col2:
+            st.metric("Суммарный прирост обращений", f"{total_leads_gain:,}")
+        with metric_col3:
+            st.metric("Суммарный прирост выручки", f"{total_revenue_gain:,} ₽")
+
+        st.subheader("📋 Итог по точкам")
+        st.dataframe(chain_results_df, use_container_width=True, hide_index=True)
+
+        summary_export_df = chain_results_df[["Адрес", "Спрос", "Прирост выручки, ₽"]].copy()
+        st.subheader("📦 Таблица для выгрузки")
+        st.dataframe(summary_export_df, use_container_width=True, hide_index=True)
+        st.download_button(
+            "Скачать CSV",
+            data=summary_export_df.to_csv(index=False).encode("utf-8-sig"),
+            file_name="chain_traffic_growth_summary.csv",
+            mime="text/csv"
+        )
+
+        st.info(
+            f"Точка с максимальным потенциалом: {top_point['Адрес']} "
+            f"({int(top_point['Прирост выручки, ₽']):,} ₽ прироста выручки)."
+        )
+    else:
+        st.info("Добавьте хотя бы одну точку с адресом и параметрами, чтобы увидеть расчет по сетке.")
+
+# --- ВКЛАДКА НАСТРОЕК ---
+with tab3:
     st.header("⚙️ Управление отраслевыми данными (Пресеты)")
     st.subheader("Редактирование параметров ниши")
     edit_name = st.selectbox("Выберите нишу для правки:", list(config["niches"].keys()), key="editor_niche_selector")
@@ -365,7 +582,7 @@ with tab2:
         st.rerun()
 
 # --- ВКЛАДКА СОХРАНЕННЫХ РАСЧЕТОВ ---
-with tab3:
+with tab4:
     st.header("📂 Управление сохраненными расчетами")
     st.info("Загрузка расчетов происходит в сайдбаре на вкладке 'Калькулятор прогноза'.")
     saved_calcs = load_saved_calculations()

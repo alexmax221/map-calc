@@ -99,6 +99,15 @@
             "avg_check": 4500,
             "conv_sale": 0.25
         },
+        "Детские товары (Мск)": {
+            "ctr_before": 0.02,
+            "ctr_after": 0.14,
+            "conv_map": 0.17,
+            "conv_call": 0.04,
+            "conv_site": 0.12,
+            "avg_check": 3500,
+            "conv_sale": 0.32
+        },
         "Бьюти-студии/Услуги (Мск)": {
             "ctr_before": 0.02,
             "ctr_after": 0.13,
