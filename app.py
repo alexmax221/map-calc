@@ -501,8 +501,24 @@ with tab2:
         st.dataframe(chain_results_df, use_container_width=True, hide_index=True)
 
         summary_export_df = chain_results_df[["Адрес", "Спрос", "Прирост выручки, ₽"]].copy()
+        summary_totals_df = pd.DataFrame([{
+            "Адрес": "Итого",
+            "Спрос": int(summary_export_df["Спрос"].sum()),
+            "Прирост выручки, ₽": int(summary_export_df["Прирост выручки, ₽"].sum()),
+        }])
+        summary_export_df = pd.concat([summary_export_df, summary_totals_df], ignore_index=True)
+
+        def highlight_total_row(row):
+            if row.name == len(summary_export_df) - 1:
+                return ["font-weight: bold"] * len(row)
+            return [""] * len(row)
+
         st.subheader("📦 Таблица для выгрузки")
-        st.dataframe(summary_export_df, use_container_width=True, hide_index=True)
+        st.dataframe(
+            summary_export_df.style.apply(highlight_total_row, axis=1),
+            use_container_width=True,
+            hide_index=True
+        )
         st.download_button(
             "Скачать CSV",
             data=summary_export_df.to_csv(index=False).encode("utf-8-sig"),
