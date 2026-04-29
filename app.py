@@ -172,10 +172,7 @@ tab1, tab2, tab3, tab4 = st.tabs(["📊 Калькулятор прогноза"
 with tab1:
     st.title("🚀 Калькулятор роста трафика на Яндекс Картах")
     st.write("Инструмент экспертной оценки потенциала локации на основе отраслевых бенчмарков.")
-    
-    # --- БОКОВАЯ ПАНЕЛЬ ---
-    st.sidebar.header("Вводные данные")
-    
+
     # --- ОБРАБОТЧИКИ ---
     def on_niche_change():
         n_name = st.session_state.niche_selector
@@ -216,36 +213,36 @@ with tab1:
                 st.session_state.niche_selector = "--- Пользовательский ---"
                 
             st.session_state.load_selector = ""
-            st.sidebar.success(f"Расчет '{load_name}' загружен!")
+            st.success(f"Расчет '{load_name}' загружен!")
 
-    # Селектор ниши
-    st.sidebar.selectbox(
-        "Ниша бизнеса (пресет):", 
-        NICHE_OPTIONS,
-        key="niche_selector",
-        on_change=on_niche_change
-    )
-    
-    st.sidebar.number_input("Спрос в локации (чел/мес):", min_value=0, step=500, key="wordstat_demand")
-    st.sidebar.number_input("Текущий рейтинг в Картах:", min_value=1.0, max_value=5.0, step=0.1, format="%.1f", key="current_rating")
-    
-    st.sidebar.number_input("Конкурентов в радиусе 1 км:", min_value=0, step=1, key="competitor_count")
-    
-    # Расчет коэффициента для вывода в sidebar
+    st.subheader("🧩 Вводные данные")
+    input_col1, input_col2, input_col3 = st.columns(3)
+    with input_col1:
+        st.selectbox(
+            "Ниша бизнеса (пресет):",
+            NICHE_OPTIONS,
+            key="niche_selector",
+            on_change=on_niche_change
+        )
+        st.number_input("Спрос в локации (чел/мес):", min_value=0, step=500, key="wordstat_demand")
+    with input_col2:
+        st.number_input("Текущий рейтинг в Картах:", min_value=1.0, max_value=5.0, step=0.1, format="%.1f", key="current_rating")
+        st.number_input("Конкурентов в радиусе 1 км:", min_value=0, step=1, key="competitor_count")
+
     cc_sidebar = config.get("competition_coeffs", {"2": 1.1, "6": 1.0, "15": 0.85, "35": 0.7, "60": 0.55, "default": 0.4})
     c_count_sb = st.session_state.competitor_count
     current_k = cc_sidebar.get("2") if c_count_sb <= 2 else (cc_sidebar.get("6") if c_count_sb <= 6 else (cc_sidebar.get("15") if c_count_sb <= 15 else (cc_sidebar.get("35") if c_count_sb <= 35 else (cc_sidebar.get("60") if c_count_sb <= 60 else cc_sidebar.get("default")))))
-    
-    st.sidebar.caption(f"📊 Множитель влияния: **x{current_k}**")
-    if current_k < 1.0:
-        st.sidebar.warning(f"Высокая конкуренция снижает продажи на {int((1-current_k)*100)}%")
-    elif current_k > 1.0:
-        st.sidebar.success(f"Низкая конкуренция дает бонус +{int((current_k-1)*100)}%")
 
-    st.sidebar.divider()
-    st.sidebar.subheader("Настройка коэффициентов")
-    
-    c_col1, c_col2 = st.sidebar.columns(2)
+    with input_col3:
+        st.caption(f"📊 Множитель влияния: **x{current_k}**")
+        if current_k < 1.0:
+            st.warning(f"Высокая конкуренция снижает продажи на {int((1-current_k)*100)}%")
+        elif current_k > 1.0:
+            st.success(f"Низкая конкуренция дает бонус +{int((current_k-1)*100)}%")
+
+    st.divider()
+    st.subheader("⚙️ Настройка коэффициентов")
+    c_col1, c_col2, c_col3 = st.columns(3)
     with c_col1:
         st.number_input("CTR до (%)", format="%.2f", key="ctr_before_in")
         st.number_input("CTR после (%)", format="%.2f", key="ctr_after_in")
@@ -254,42 +251,8 @@ with tab1:
         st.number_input("Конв. в звонок (%)", format="%.2f", key="conv_call_in")
         st.number_input("Конв. на сайт (%)", format="%.2f", key="conv_site_in")
         st.number_input("Конв. в продажу (%)", format="%.2f", key="conv_sale_in")
-    
-    st.sidebar.number_input("Средний чек (руб)", step=500, key="avg_check_in")
-
-    # --- ЗАГРУЗКА И СОХРАНЕНИЕ ---
-    st.sidebar.divider()
-    
-    saved_calcs = load_saved_calculations()
-    single_saved_calc_names = [name for name, data in saved_calcs.items() if get_calculation_type(data) == "single"]
-    st.sidebar.selectbox(
-        "Загрузить расчет:",
-        [""] + single_saved_calc_names,
-        key="load_selector",
-        on_change=on_load_calculation
-    )
-
-    save_name = st.sidebar.text_input("Название для сохранения:")
-    if st.sidebar.button("💾 Сохранить текущий расчет"):
-        if save_name:
-            calc_data = {
-                "calc_type": "single",
-                "niche": st.session_state.niche_selector,
-                "wordstat_demand": st.session_state.wordstat_demand,
-                "current_rating": st.session_state.current_rating,
-                "competitor_count": st.session_state.competitor_count,
-                "ctr_before": st.session_state.ctr_before_in,
-                "ctr_after": st.session_state.ctr_after_in,
-                "conv_map": st.session_state.conv_map_in,
-                "conv_call": st.session_state.conv_call_in,
-                "conv_site": st.session_state.conv_site_in,
-                "conv_sale": st.session_state.conv_sale_in,
-                "avg_check": st.session_state.avg_check_in
-            }
-            save_calculation(save_name, calc_data)
-            st.sidebar.success("✅ Сохранено!")
-        else:
-            st.sidebar.error("Введите название расчета!")
+    with c_col3:
+        st.number_input("Средний чек (руб)", step=500, key="avg_check_in")
 
     # --- ЛОГИКА РАСЧЕТА ---
     rc = config["rating_coeffs"]
@@ -350,27 +313,40 @@ with tab1:
             *   **Выручка**: Продажи × Средний чек.
             """)
 
-    st.subheader("📝 Текст для коммерческого предложения")
-    st.text_area("Скопируйте текст:", f"""
-АНАЛИЗ ЛОКАЦИИ И ЭКОНОМИЧЕСКИЙ ПРОГНОЗ
-Ниша: {st.session_state.niche_selector} (Москва)
----
-1. ОЦЕНКА СПРОСА И КОНКУРЕНЦИИ
-Общий объем горячего спроса в локации (Wordstat): {st.session_state.wordstat_demand:,} чел/мес.
-Плотность конкуренции: {st.session_state.competitor_count} объектов в радиусе 1 км.
-2. ПРОГНОЗ ПОКАЗАТЕЛЕЙ (Цель: ТОП-3 + Рейтинг 4.8+)
-• Охват (просмотры карточки): {after[0]:,} (рост с {before[0]:,})
-• Целевые обращения (звонки/маршруты/сайт): {after[4]:,} шт/мес.
-• Прогнозное кол-во продаж: {after[6]:,} шт/мес.
-• Кратность роста видимости: {round(after[0]/max(before[0],1),1)}x
-3. ЭКОНОМИЧЕСКАЯ ЭФФЕКТИВНОСТЬ
-• Средний чек: {st.session_state.avg_check_in:,} руб.
-• Конверсия из обращения в продажу: {st.session_state.conv_sale_in:.1f}%
-• Прогнозная выручка: {after[5]:,} руб/мес.
-• Чистый прирост выручки от продвижения: {after[5] - before[5]:,} руб/мес.
----
-*Данные основаны на индивидуально настроенных коэффициентах и емкости рынка в указанной локации.
-""", height=350)
+    st.divider()
+    st.subheader("💾 Сохранение и загрузка одиночного расчета")
+    saved_calcs = load_saved_calculations()
+    single_saved_calc_names = [name for name, data in saved_calcs.items() if get_calculation_type(data) == "single"]
+    save_load_col1, save_load_col2 = st.columns(2)
+    with save_load_col1:
+        st.selectbox(
+            "Загрузить расчет:",
+            [""] + single_saved_calc_names,
+            key="load_selector",
+            on_change=on_load_calculation
+        )
+    with save_load_col2:
+        save_name = st.text_input("Название для сохранения:")
+        if st.button("💾 Сохранить текущий расчет"):
+            if save_name:
+                calc_data = {
+                    "calc_type": "single",
+                    "niche": st.session_state.niche_selector,
+                    "wordstat_demand": st.session_state.wordstat_demand,
+                    "current_rating": st.session_state.current_rating,
+                    "competitor_count": st.session_state.competitor_count,
+                    "ctr_before": st.session_state.ctr_before_in,
+                    "ctr_after": st.session_state.ctr_after_in,
+                    "conv_map": st.session_state.conv_map_in,
+                    "conv_call": st.session_state.conv_call_in,
+                    "conv_site": st.session_state.conv_site_in,
+                    "conv_sale": st.session_state.conv_sale_in,
+                    "avg_check": st.session_state.avg_check_in
+                }
+                save_calculation(save_name, calc_data)
+                st.success("✅ Сохранено!")
+            else:
+                st.error("Введите название расчета!")
 
 # --- ВКЛАДКА СЕТКИ ТОЧЕК ---
 with tab2:
