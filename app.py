@@ -92,6 +92,48 @@ def delete_calculation(name):
         return True
     return False
 
+def get_calculation_type(data):
+    return data.get("calc_type", "single")
+
+def queue_chain_calculation_load(calc_name, data):
+    st.session_state.pending_chain_load = {
+        "name": calc_name,
+        "data": data,
+    }
+
+def load_chain_calculation_into_state(calc_name, data):
+    points = data.get("points", [])
+    normalized_points = [
+        {
+            "Адрес": point.get("address", ""),
+            "Спрос": int(point.get("demand", 0)),
+            "Конкуренты": int(point.get("competitors", 0)),
+            "Рейтинг": float(point.get("rating", 4.0)),
+        }
+        for point in points
+    ]
+
+    for key in list(st.session_state.keys()):
+        if key.startswith("chain_address_") or key.startswith("chain_demand_") or key.startswith("chain_competitors_") or key.startswith("chain_rating_"):
+            del st.session_state[key]
+
+    st.session_state.chain_points = normalized_points or [{"Адрес": "", "Спрос": 10000, "Конкуренты": 5, "Рейтинг": 4.0}]
+    st.session_state.chain_save_name = calc_name
+    saved_niche = data.get("niche")
+    if saved_niche in config["niches"]:
+        st.session_state.chain_niche_selector = saved_niche
+
+    for idx, point in enumerate(st.session_state.chain_points):
+        st.session_state[f"chain_address_{idx}"] = point["Адрес"]
+        st.session_state[f"chain_demand_{idx}"] = point["Спрос"]
+        st.session_state[f"chain_competitors_{idx}"] = point["Конкуренты"]
+        st.session_state[f"chain_rating_{idx}"] = point["Рейтинг"]
+
+def apply_pending_chain_load():
+    pending = st.session_state.pop("pending_chain_load", None)
+    if pending:
+        load_chain_calculation_into_state(pending["name"], pending["data"])
+
 # --- ИНИЦИАЛИЗАЦИЯ ---
 
 st.set_page_config(page_title="Яндекс Карты: Прогноз 2025 (Мск)", layout="wide")
@@ -154,7 +196,7 @@ with tab1:
         if not load_name:
             return
         data = load_saved_calculations().get(load_name)
-        if data:
+        if data and get_calculation_type(data) == "single":
             st.session_state.wordstat_demand = data['wordstat_demand']
             st.session_state.current_rating = data['current_rating']
             st.session_state.competitor_count = data.get('competitor_count', 5)
@@ -219,9 +261,10 @@ with tab1:
     st.sidebar.divider()
     
     saved_calcs = load_saved_calculations()
+    single_saved_calc_names = [name for name, data in saved_calcs.items() if get_calculation_type(data) == "single"]
     st.sidebar.selectbox(
         "Загрузить расчет:",
-        [""] + list(saved_calcs.keys()),
+        [""] + single_saved_calc_names,
         key="load_selector",
         on_change=on_load_calculation
     )
@@ -230,6 +273,7 @@ with tab1:
     if st.sidebar.button("💾 Сохранить текущий расчет"):
         if save_name:
             calc_data = {
+                "calc_type": "single",
                 "niche": st.session_state.niche_selector,
                 "wordstat_demand": st.session_state.wordstat_demand,
                 "current_rating": st.session_state.current_rating,
@@ -330,6 +374,7 @@ with tab1:
 
 # --- ВКЛАДКА СЕТКИ ТОЧЕК ---
 with tab2:
+    apply_pending_chain_load()
     st.title("🏪 Расчет прироста трафика для сетки точек")
     st.write("Выберите нишу и заполните данные по каждой точке. Для всей сетки автоматически применяются бенчмарки выбранной отрасли.")
 
@@ -370,11 +415,24 @@ with tab2:
 
     for idx, point in enumerate(st.session_state.chain_points):
         row_cols = st.columns([3, 1.2, 1.2, 1.2, 0.8])
+        address_key = f"chain_address_{idx}"
+        demand_key = f"chain_demand_{idx}"
+        competitors_key = f"chain_competitors_{idx}"
+        rating_key = f"chain_rating_{idx}"
+
+        if address_key not in st.session_state:
+            st.session_state[address_key] = point.get("Адрес", "")
+        if demand_key not in st.session_state:
+            st.session_state[demand_key] = int(point.get("Спрос", 10000))
+        if competitors_key not in st.session_state:
+            st.session_state[competitors_key] = int(point.get("Конкуренты", 5))
+        if rating_key not in st.session_state:
+            st.session_state[rating_key] = float(point.get("Рейтинг", 4.0))
+
         with row_cols[0]:
             address = st.text_input(
                 f"Адрес {idx + 1}",
-                value=point.get("Адрес", ""),
-                key=f"chain_address_{idx}",
+                key=address_key,
                 label_visibility="collapsed",
                 placeholder="Например, ул. Ленина, 10"
             )
@@ -383,8 +441,7 @@ with tab2:
                 f"Спрос {idx + 1}",
                 min_value=0,
                 step=500,
-                value=int(point.get("Спрос", 10000)),
-                key=f"chain_demand_{idx}",
+                key=demand_key,
                 label_visibility="collapsed"
             )
         with row_cols[2]:
@@ -392,8 +449,7 @@ with tab2:
                 f"Конкуренты {idx + 1}",
                 min_value=0,
                 step=1,
-                value=int(point.get("Конкуренты", 5)),
-                key=f"chain_competitors_{idx}",
+                key=competitors_key,
                 label_visibility="collapsed"
             )
         with row_cols[3]:
@@ -402,9 +458,8 @@ with tab2:
                 min_value=1.0,
                 max_value=5.0,
                 step=0.1,
-                value=float(point.get("Рейтинг", 4.0)),
                 format="%.1f",
-                key=f"chain_rating_{idx}",
+                key=rating_key,
                 label_visibility="collapsed"
             )
         with row_cols[4]:
@@ -425,6 +480,8 @@ with tab2:
 
     cc = config.get("competition_coeffs", {"2": 1.1, "6": 1.0, "15": 0.85, "35": 0.7, "60": 0.55, "default": 0.4})
     rc = config["rating_coeffs"]
+    saved_calcs = load_saved_calculations()
+    chain_saved_calc_names = [name for name, data in saved_calcs.items() if get_calculation_type(data) == "chain"]
     chain_results = []
 
     for row in st.session_state.chain_points:
@@ -533,6 +590,53 @@ with tab2:
     else:
         st.info("Добавьте хотя бы одну точку с адресом и параметрами, чтобы увидеть расчет по сетке.")
 
+    st.divider()
+    st.subheader("💾 Сохранение и загрузка сеточного расчета")
+
+    chain_load_col, chain_save_col = st.columns(2)
+    with chain_load_col:
+        selected_chain_calc = st.selectbox(
+            "Загрузить сохраненный сеточный расчет:",
+            [""] + chain_saved_calc_names,
+            key="chain_load_selector"
+        )
+        if st.button("Загрузить в Сетку точек", key="load_chain_calc_btn"):
+            if selected_chain_calc:
+                queue_chain_calculation_load(selected_chain_calc, saved_calcs[selected_chain_calc])
+                st.rerun()
+            else:
+                st.error("Выберите сохраненный сеточный расчет для загрузки.")
+
+    with chain_save_col:
+        chain_save_name = st.text_input("Название для сохранения сеточного расчета:", key="chain_save_name")
+        if st.button("💾 Сохранить расчет по сетке", key="save_chain_calc"):
+            valid_chain_points = [
+                {
+                    "address": row["Адрес"],
+                    "demand": int(row["Спрос"]),
+                    "competitors": int(row["Конкуренты"]),
+                    "rating": float(row["Рейтинг"]),
+                }
+                for row in st.session_state.chain_points
+                if str(row.get("Адрес", "")).strip() and int(row.get("Спрос", 0) or 0) > 0
+            ]
+            if not valid_chain_points:
+                st.error("Добавьте хотя бы одну точку с адресом и спросом, чтобы сохранить сеточный расчет.")
+            elif chain_save_name.strip():
+                save_calculation(chain_save_name.strip(), {
+                    "calc_type": "chain",
+                    "niche": chain_niche,
+                    "points": valid_chain_points,
+                    "summary": {
+                        "total_views_gain": int(sum(item["Прирост просмотров"] for item in chain_results)),
+                        "total_leads_gain": int(sum(item["Прирост обращений"] for item in chain_results)),
+                        "total_revenue_gain": int(sum(item["Прирост выручки, ₽"] for item in chain_results)),
+                    }
+                })
+                st.success("✅ Сеточный расчет сохранен со всеми вводными данными!")
+            else:
+                st.error("Введите название для сохранения сеточного расчета.")
+
 # --- ВКЛАДКА НАСТРОЕК ---
 with tab3:
     st.header("⚙️ Управление отраслевыми данными (Пресеты)")
@@ -600,18 +704,45 @@ with tab3:
 # --- ВКЛАДКА СОХРАНЕННЫХ РАСЧЕТОВ ---
 with tab4:
     st.header("📂 Управление сохраненными расчетами")
-    st.info("Загрузка расчетов происходит в сайдбаре на вкладке 'Калькулятор прогноза'.")
+    st.info("Одиночные расчеты загружаются в сайдбаре на вкладке 'Калькулятор прогноза'. Сеточные расчеты хранятся здесь как отдельные сохранения.")
     saved_calcs = load_saved_calculations()
     
     if not saved_calcs:
         st.info("У вас пока нет сохраненных расчетов.")
     else:
         for name, data in saved_calcs.items():
-            with st.expander(f"📍 {name} (Ниша: {data.get('niche', 'N/A')})"):
-                st.write(f"**Спрос:** {data.get('wordstat_demand', 'N/A')} | **Рейтинг:** {data.get('current_rating', 'N/A')}")
-                st.write(f"**CTR:** {data.get('ctr_before', 'N/A')}% → {data.get('ctr_after', 'N/A')}%")
-                st.write(f"**Средний чек:** {data.get('avg_check', 0):,} руб. | **Конв. в продажу:** {data.get('conv_sale', 'N/A')}%")
-                
+            calc_type = get_calculation_type(data)
+            type_label = "Сетка точек" if calc_type == "chain" else "Одиночный расчет"
+
+            with st.expander(f"📍 {name} ({type_label}, ниша: {data.get('niche', 'N/A')})"):
+                if calc_type == "chain":
+                    points = data.get("points", [])
+                    summary = data.get("summary", {})
+                    st.write(f"**Точек в расчете:** {len(points)}")
+                    st.write(
+                        f"**Суммарный прирост просмотров:** {summary.get('total_views_gain', 0):,} | "
+                        f"**Суммарный прирост обращений:** {summary.get('total_leads_gain', 0):,} | "
+                        f"**Суммарный прирост выручки:** {summary.get('total_revenue_gain', 0):,} ₽"
+                    )
+                    if points:
+                        chain_saved_df = pd.DataFrame([
+                            {
+                                "Адрес": point.get("address", ""),
+                                "Спрос": point.get("demand", 0),
+                                "Конкуренты": point.get("competitors", 0),
+                                "Рейтинг": point.get("rating", 0),
+                            }
+                            for point in points
+                        ])
+                        st.dataframe(chain_saved_df, use_container_width=True, hide_index=True)
+                    if st.button("Загрузить в Сетку точек", key=f"load_chain_{name}"):
+                        queue_chain_calculation_load(name, data)
+                        st.rerun()
+                else:
+                    st.write(f"**Спрос:** {data.get('wordstat_demand', 'N/A')} | **Рейтинг:** {data.get('current_rating', 'N/A')}")
+                    st.write(f"**CTR:** {data.get('ctr_before', 'N/A')}% → {data.get('ctr_after', 'N/A')}%")
+                    st.write(f"**Средний чек:** {data.get('avg_check', 0):,} руб. | **Конв. в продажу:** {data.get('conv_sale', 'N/A')}%")
+
                 if st.button("Удалить", key=f"del_{name}"):
                     delete_calculation(name)
                     st.warning(f"Расчет '{name}' удален.")
