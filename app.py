@@ -56,6 +56,14 @@ def get_competition_coeff(competitor_count, competition_coeffs):
         return competition_coeffs.get("35")
     if competitor_count <= 60:
         return competition_coeffs.get("60")
+    if competitor_count <= 150:
+        return competition_coeffs.get("150")
+    if competitor_count <= 300:
+        return competition_coeffs.get("300")
+    if competitor_count <= 600:
+        return competition_coeffs.get("600")
+    if competitor_count <= 1000:
+        return competition_coeffs.get("1000")
     return competition_coeffs.get("default")
 
 def calculate_metrics(demand, ctr, rating_coeff, conv_map, conv_call, conv_site, conv_sale, avg_check, competition_coeff):
@@ -229,7 +237,7 @@ with tab1:
         st.number_input("Текущий рейтинг в Картах:", min_value=1.0, max_value=5.0, step=0.1, format="%.1f", key="current_rating")
         st.number_input("Конкурентов в радиусе 1 км:", min_value=0, step=1, key="competitor_count")
 
-    cc_sidebar = config.get("competition_coeffs", {"2": 1.1, "6": 1.0, "15": 0.85, "35": 0.7, "60": 0.55, "default": 0.4})
+    cc_sidebar = config.get("competition_coeffs", {"2": 1.1, "6": 1.0, "15": 0.85, "35": 0.7, "60": 0.55, "150": 0.35, "300": 0.25, "600": 0.16, "1000": 0.1, "default": 0.06})
     c_count_sb = st.session_state.competitor_count
     current_k = cc_sidebar.get("2") if c_count_sb <= 2 else (cc_sidebar.get("6") if c_count_sb <= 6 else (cc_sidebar.get("15") if c_count_sb <= 15 else (cc_sidebar.get("35") if c_count_sb <= 35 else (cc_sidebar.get("60") if c_count_sb <= 60 else cc_sidebar.get("default")))))
 
@@ -260,7 +268,7 @@ with tab1:
     r_coeff_after = rc.get("4.8")
 
     # Коэффициент конкуренции из конфига
-    cc = config.get("competition_coeffs", {"2": 1.1, "6": 1.0, "15": 0.85, "35": 0.7, "60": 0.55, "default": 0.4})
+    cc = config.get("competition_coeffs", {"2": 1.1, "6": 1.0, "15": 0.85, "35": 0.7, "60": 0.55, "150": 0.35, "300": 0.25, "600": 0.16, "1000": 0.1, "default": 0.06})
     c_count = st.session_state.competitor_count
     comp_coeff = get_competition_coeff(c_count, cc)
 
@@ -454,7 +462,7 @@ with tab2:
         st.session_state.chain_points.pop(remove_index)
         st.rerun()
 
-    cc = config.get("competition_coeffs", {"2": 1.1, "6": 1.0, "15": 0.85, "35": 0.7, "60": 0.55, "default": 0.4})
+    cc = config.get("competition_coeffs", {"2": 1.1, "6": 1.0, "15": 0.85, "35": 0.7, "60": 0.55, "150": 0.35, "300": 0.25, "600": 0.16, "1000": 0.1, "default": 0.06})
     rc = config["rating_coeffs"]
     saved_calcs = load_saved_calculations()
     chain_saved_calc_names = [name for name, data in saved_calcs.items() if get_calculation_type(data) == "chain"]
