@@ -81,6 +81,15 @@
             "avg_check": 25000,
             "conv_sale": 0.2
         },
+        "Мебель (Мск)": {
+            "ctr_before": 0.014,
+            "ctr_after": 0.1,
+            "conv_map": 0.22,
+            "conv_call": 0.12,
+            "conv_site": 0.16,
+            "avg_check": 55000,
+            "conv_sale": 0.24
+        },
         "Продукты/Магазины (Мск)": {
             "ctr_before": 0.04,
             "ctr_after": 0.22,
