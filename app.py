@@ -511,6 +511,12 @@ with tab2:
             "Рейтинг": round(rating, 1),
             "Просмотры сейчас": before_point[0],
             "Просмотры после": after_point[0],
+            "Маршруты сейчас": before_point[1],
+            "Маршруты после": after_point[1],
+            "Звонки сейчас": before_point[2],
+            "Звонки после": after_point[2],
+            "Сайт сейчас": before_point[3],
+            "Сайт после": after_point[3],
             "Прирост просмотров": after_point[0] - before_point[0],
             "Обращения сейчас": before_point[4],
             "Обращения после": after_point[4],
@@ -529,6 +535,23 @@ with tab2:
         total_leads_gain = int(chain_results_df["Прирост обращений"].sum())
         total_revenue_gain = int(chain_results_df["Прирост выручки, ₽"].sum())
         top_point = chain_results_df.sort_values("Прирост выручки, ₽", ascending=False).iloc[0]
+        chain_metrics_labels = ["Просмотры", "Маршруты", "Звонки", "Сайт", "Всего обращений", "Продажи"]
+        chain_before_totals = [
+            int(chain_results_df["Просмотры сейчас"].sum()),
+            int(chain_results_df["Маршруты сейчас"].sum()),
+            int(chain_results_df["Звонки сейчас"].sum()),
+            int(chain_results_df["Сайт сейчас"].sum()),
+            int(chain_results_df["Обращения сейчас"].sum()),
+            int(chain_results_df["Продажи сейчас"].sum()),
+        ]
+        chain_after_totals = [
+            int(chain_results_df["Просмотры после"].sum()),
+            int(chain_results_df["Маршруты после"].sum()),
+            int(chain_results_df["Звонки после"].sum()),
+            int(chain_results_df["Сайт после"].sum()),
+            int(chain_results_df["Обращения после"].sum()),
+            int(chain_results_df["Продажи после"].sum()),
+        ]
 
         metric_col1, metric_col2, metric_col3 = st.columns(3)
         with metric_col1:
@@ -537,6 +560,15 @@ with tab2:
             st.metric("Суммарный прирост обращений", f"{total_leads_gain:,}")
         with metric_col3:
             st.metric("Суммарный прирост выручки", f"{total_revenue_gain:,} ₽")
+
+        st.subheader("💰 Экономический эффект по всем точкам")
+        st.metric("Прирост выручки (прогноз)", f"{total_revenue_gain:,} ₽")
+        st.table(pd.DataFrame({
+            "Метрика": chain_metrics_labels,
+            "Было": chain_before_totals,
+            "Станет": chain_after_totals,
+            "Рост": [f"{round(a/max(b,1), 1)}x" for a, b in zip(chain_after_totals, chain_before_totals)]
+        }))
 
         st.subheader("📋 Итог по точкам")
         st.dataframe(chain_results_df, use_container_width=True, hide_index=True)
