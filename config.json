@@ -72,6 +72,15 @@
             "avg_check": 6000,
             "conv_sale": 0.28
         },
+        "Ремонт и строительные материалы (Мск)": {
+            "ctr_before": 0.015,
+            "ctr_after": 0.09,
+            "conv_map": 0.16,
+            "conv_call": 0.08,
+            "conv_site": 0.16,
+            "avg_check": 15000,
+            "conv_sale": 0.16
+        },
         "Техника и электроника (Мск)": {
             "ctr_before": 0.012,
             "ctr_after": 0.08,
