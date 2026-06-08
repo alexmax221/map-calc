@@ -102,11 +102,11 @@
         "Продукты/Магазины (Мск)": {
             "ctr_before": 0.04,
             "ctr_after": 0.22,
-            "conv_map": 0.4,
+            "conv_map": 0.28,
             "conv_call": 0.02,
             "conv_site": 0.03,
             "avg_check": 2000,
-            "conv_sale": 0.55
+            "conv_sale": 0.4
         },
         "Косметика (Мск)": {
             "ctr_before": 0.018,
