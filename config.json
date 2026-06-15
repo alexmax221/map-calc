@@ -45,6 +45,15 @@
             "avg_check": 5000,
             "conv_sale": 0.35
         },
+        "Барбершоп (Мск)": {
+            "ctr_before": 0.02,
+            "ctr_after": 0.13,
+            "conv_map": 0.16,
+            "conv_call": 0.2,
+            "conv_site": 0.05,
+            "avg_check": 3000,
+            "conv_sale": 0.35
+        },
         "Фитнес-клуб (Мск)": {
             "ctr_before": 0.015,
             "ctr_after": 0.09,
